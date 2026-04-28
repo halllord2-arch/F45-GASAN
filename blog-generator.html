@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F45 가산 블로그 글 생성기</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f2f6fb;
+      color: #0b1f3a;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+
+    header {
+      background: #0b1f3a;
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .logo {
+      font-size: 2rem; font-weight: 900; letter-spacing: 3px; color: #fff;
+    }
+    .logo span { color: #e8192c; }
+    header p { color: rgba(255,255,255,0.65); font-size: 0.95rem; margin-top: 4px; }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 20px;
+      border: 1px solid #d0dae8;
+    }
+    .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #0b1f3a; }
+
+    /* 주제 선택 */
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .topic-btn {
+      padding: 14px 12px; border-radius: 10px;
+      border: 2px solid #d0dae8;
+      background: #f8fafd;
+      font-size: 0.88rem; font-weight: 600;
+      color: #4a6080; cursor: pointer;
+      text-align: center; line-height: 1.4;
+      transition: all 0.2s;
+    }
+    .topic-btn:hover { border-color: #e8192c; color: #e8192c; background: #fff5f6; }
+    .topic-btn.active { border-color: #e8192c; background: #e8192c; color: #fff; }
+
+    /* 생성 버튼 */
+    .generate-btn {
+      width: 100%; padding: 18px;
+      background: #e8192c; color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: background 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .generate-btn:hover { background: #c0121f; }
+    .generate-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* 결과 */
+    .result-card { display: none; }
+    .result-card.show { display: block; }
+    .result-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .result-header h2 { font-size: 1.05rem; font-weight: 700; }
+    .copy-btn {
+      background: #0b1f3a; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 22px; font-size: 0.88rem; font-weight: 700;
+      cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #1a3a6e; }
+    .copy-btn.copied { background: #16a34a; }
+
+    #output {
+      background: #f8fafd;
+      border: 1px solid #d0dae8;
+      border-radius: 10px;
+      padding: 28px;
+      font-size: 1rem; line-height: 1.9;
+      color: #0b1f3a;
+      white-space: pre-wrap;
+      word-break: keep-all;
+      min-height: 300px;
+    }
+
+    .tag-row { margin-top: 16px; }
+    .tag-row p { font-size: 0.82rem; color: #4a6080; margin-bottom: 8px; font-weight: 600; }
+    #tags {
+      background: #f2f6fb;
+      border: 1px solid #d0dae8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.9rem; color: #e8192c;
+      line-height: 1.8;
+    }
+
+    .tip {
+      background: #fff8e1;
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 0.85rem;
+      color: #92400e;
+      line-height: 1.7;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="logo">F45 <span>가산</span></div>
+      <p>네이버 블로그 글 자동 생성기 — 클릭 한 번으로 SEO 최적화 글 완성</p>
+    </div>
+  </header>
+
+  <!-- 주제 선택 -->
+  <div class="card">
+    <h2>① 블로그 주제 선택</h2>
+    <div class="topic-grid" id="topicGrid">
+      <div class="topic-btn active" data-topic="0">직장인 운동<br />필요성</div>
+      <div class="topic-btn" data-topic="1">45분 운동의<br />효과</div>
+      <div class="topic-btn" data-topic="2">30·40대<br />체형 관리</div>
+      <div class="topic-btn" data-topic="3">그룹 트레이닝<br />장점</div>
+      <div class="topic-btn" data-topic="4">체지방 감소<br />방법</div>
+      <div class="topic-btn" data-topic="5">근력 운동<br />중요성</div>
+      <div class="topic-btn" data-topic="6">1주일 무제한<br />체험 안내</div>
+      <div class="topic-btn" data-topic="7">가산역 주변<br />운동 추천</div>
+    </div>
+  </div>
+
+  <!-- 생성 버튼 -->
+  <div class="card" style="padding: 20px 36px;">
+    <button class="generate-btn" id="generateBtn" onclick="generate()">② 블로그 글 생성하기</button>
+  </div>
+
+  <!-- 결과 -->
+  <div class="card result-card" id="resultCard">
+    <div class="result-header">
+      <h2>③ 생성된 블로그 글 — 복사 후 네이버 블로그에 붙여넣기</h2>
+      <button class="copy-btn" id="copyBtn" onclick="copyText()">복사하기</button>
+    </div>
+    <div id="output"></div>
+    <div class="tag-row">
+      <p>추천 해시태그 (블로그 글 맨 아래 붙여넣기)</p>
+      <div id="tags"></div>
+    </div>
+    <div class="tip">
+      💡 <strong>사용 방법:</strong> 위 글을 복사 → 네이버 블로그 글쓰기 → 붙여넣기 → 사진 1~3장 추가 → 게시.<br />
+      매번 "생성하기"를 누를 때마다 다른 글이 나옵니다. 주 1~2회 게시하면 검색 노출에 효과적입니다.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── 주제 선택 ──
+  let selectedTopic = 0;
+  document.querySelectorAll('.topic-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedTopic = parseInt(btn.dataset.topic);
+    });
+  });
+
+  // ── 콘텐츠 데이터 ──
+  const topics = [
+
+    // 0. 직장인 운동 필요성
+    {
+      titles: [
+        "퇴근 후 운동, 가산디지털단지 직장인이라면 이렇게 하세요",
+        "야근이 잦은 직장인을 위한 최고의 운동법",
+        "가산역 직장인 필독! 짧고 강한 운동이 답입니다",
+        "운동할 시간이 없다는 핑계, 이제 끝낼 때가 됐습니다"
+      ],
+      bodies: [
+        `하루 종일 의자에 앉아 업무를 보다 보면 어느새 체력도, 체형도 무너지기 시작합니다. 가산디지털단지에서 일하는 직장인이라면 공감하실 겁니다.
+
+퇴근 후 운동을 결심해도 헬스장 가면 뭘 해야 할지 모르겠고, 혼자 하다 보면 금방 지루해져서 포기하게 되죠.
+
+그래서 가산에 F45 Training이 생겼습니다.
+
+■ F45가 직장인에게 딱인 이유
+
+✔ 딱 45분만 투자하면 됩니다
+점심시간이나 퇴근 후 45분. 불필요한 준비 시간 없이 바로 시작하고 바로 끝납니다.
+
+✔ 매번 코치가 이끌어줍니다
+헬스장에서 멍하니 서 있을 필요 없습니다. 처음부터 끝까지 전문 코치가 함께하며 동작을 안내해줍니다.
+
+✔ 매번 다른 운동으로 지루할 틈이 없습니다
+80가지 이상의 프로그램이 매번 달라져 질리지 않고 꾸준히 다닐 수 있습니다.
+
+■ 가산디지털단지역에서 도보 5분
+
+1호선·7호선 가산디지털단지역에서 걸어서 5분 거리. 퇴근길에 바로 들를 수 있는 최적의 위치입니다.
+
+지금 1주일 무제한 체험을 신청해보세요. 단 한 번만 경험해보셔도 왜 수많은 직장인들이 F45를 선택하는지 바로 느끼실 수 있습니다.
+
+📍 서울 금천구 벚꽃로 254
+📞 010-8019-0450
+🔗 1주일 무제한 체험 신청: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `"운동해야 하는데..." 라는 말을 달고 사는 직장인분들께 이 글을 씁니다.
+
+바쁜 건 맞습니다. 야근도 많고, 퇴근하면 지쳐서 아무것도 하기 싫은 날도 있죠. 그런데 그렇게 1년, 2년이 지나면 몸이 먼저 이상 신호를 보내기 시작합니다.
+
+가산디지털단지에서 운동하기 딱 좋은 곳이 생겼습니다. F45 Training 가산점입니다.
+
+■ 45분이면 충분합니다
+
+F45는 45분 안에 유산소와 근력 운동을 동시에 할 수 있도록 과학적으로 설계된 프로그램입니다. 한 세션에 최대 750kcal를 소모할 수 있습니다.
+
+■ 혼자가 아니라 팀으로
+
+그룹 트레이닝 방식이라 함께하는 멤버들과 서로 동기부여가 됩니다. 혼자 운동할 때보다 훨씬 더 열심히 하게 되는 게 신기할 정도입니다.
+
+운동을 시작하기 가장 좋은 타이밍은 바로 지금입니다. 1주일 무제한 체험으로 부담 없이 시작해보세요.
+
+📍 가산디지털단지역 도보 5분
+🔗 체험 신청: https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#가산디지털단지헬스장 #가산역운동 #직장인운동 #가산PT #금천구헬스장 #F45가산 #가산피트니스 #직장인다이어트 #가산운동추천"
+    },
+
+    // 1. 45분 운동 효과
+    {
+      titles: [
+        "45분 운동이 2시간 운동보다 효과적인 과학적 이유",
+        "짧게 운동해도 될까요? F45 45분 트레이닝의 진실",
+        "하루 45분, 8주면 체형이 달라집니다",
+        "운동 시간이 길다고 더 좋은 게 아닙니다 — F45의 원리"
+      ],
+      bodies: [
+        `많은 분들이 '운동은 오래 해야 효과가 있다'고 생각합니다. 그런데 정말 그럴까요?
+
+스포츠 과학 연구에 따르면, 고강도 인터벌 트레이닝(HIIT) 방식의 45분 운동이 저강도 장시간 운동보다 체지방 감소와 근력 향상에 훨씬 더 효과적입니다.
+
+F45 Training이 바로 이 원리를 기반으로 만들어진 프로그램입니다.
+
+■ 45분 안에 일어나는 일
+
+✔ 0~10분: 몸이 본격적으로 워밍업되며 심박수가 올라갑니다
+✔ 10~35분: 고강도 인터벌로 체지방이 빠르게 연소됩니다
+✔ 35~45분: 마무리 운동으로 근육 회복을 돕습니다
+
+■ 애프터번 효과
+
+F45 운동 후에는 운동이 끝나도 최대 수 시간 동안 칼로리가 계속 소모됩니다. 이를 EPOC(운동 후 초과 산소 소비)라고 합니다. 즉, 운동하고 나서도 몸이 계속 일하는 셈입니다.
+
+■ 실제 변화까지 얼마나 걸릴까요?
+
+꾸준히 다닌 멤버들의 평균 체형 변화 시점은 약 8주입니다. 일주일에 3회 이상 참여하시면 더 빠르게 변화를 느끼실 수 있습니다.
+
+가산디지털단지에서 45분 투자로 몸을 바꾸고 싶으신 분, F45 가산의 1주일 무제한 체험을 신청해보세요.
+
+📍 서울 금천구 벚꽃로 254 (가산디지털단지역 도보 5분)
+🔗 https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `"45분밖에 안 하는데 효과가 있을까?" 처음에는 저도 그런 생각을 했습니다.
+
+그런데 F45 첫 수업을 마치고 나서 그 생각이 완전히 바뀌었습니다. 45분이 이렇게 길게 느껴진 적이 없었습니다.
+
+F45는 HIIT(고강도 인터벌 트레이닝) + 서킷 트레이닝 + 기능성 운동을 결합한 방식으로, 쉬는 시간을 최소화하고 운동 밀도를 극대화합니다.
+
+한 세션에 소모하는 칼로리는 최대 750kcal. 러닝머신에서 2시간 걷는 것보다 훨씬 많은 칼로리를 태웁니다.
+
+게다가 매번 다른 프로그램으로 진행되기 때문에 몸이 적응하지 못하고 계속 변화합니다.
+
+지금 가산디지털단지역 근처에서 운동 찾고 계신다면 F45 가산 1주일 무제한 체험을 먼저 경험해보세요.
+
+🔗 체험 신청: https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#45분운동 #HIIT #가산디지털단지헬스장 #F45가산 #체지방감소 #그룹피트니스 #가산피트니스 #금천구운동 #애프터번효과"
+    },
+
+    // 2. 30·40대 체형 관리
+    {
+      titles: [
+        "30대부터 시작하는 체형 관리, 이것만 알면 됩니다",
+        "40대에도 체형 바꿀 수 있습니다 — 가산 직장인의 변화",
+        "30·40대 직장인 체형 관리, 헬스장보다 F45가 나은 이유",
+        "나이 들수록 더 중요한 근력 운동, F45로 시작하세요"
+      ],
+      bodies: [
+        `30대가 되면서 예전과 같이 먹어도 살이 더 잘 찌고, 빠지지 않는다는 걸 느끼기 시작합니다. 40대에는 그 속도가 더 빨라집니다.
+
+이건 의지력의 문제가 아닙니다. 나이가 들수록 기초대사량이 낮아지고 근육량이 감소하면서 몸의 구성이 달라지기 때문입니다.
+
+■ 30·40대 체형 관리의 핵심
+
+단순 다이어트나 유산소 운동만으로는 한계가 있습니다. 체지방을 줄이면서 근육량을 유지하거나 늘려야 기초대사량이 올라가고, 요요 없이 체형을 유지할 수 있습니다.
+
+F45 Training은 바로 이 원리에 맞게 설계되어 있습니다.
+
+■ F45가 30·40대에 효과적인 이유
+
+✔ 유산소 + 근력을 동시에: 한 번의 운동으로 두 가지 효과를 얻을 수 있습니다
+✔ 관절 부담 최소화: 기능성 동작 위주로 구성되어 부상 위험이 낮습니다
+✔ 코치의 자세 교정: 혼자 하다가 생기는 잘못된 자세를 바로잡아줍니다
+✔ 짧은 시간 고효율: 바쁜 직장인도 45분이면 충분합니다
+
+가산디지털단지에서 체형 관리를 시작하고 싶은 30·40대라면 F45 가산의 1주일 무제한 체험을 경험해보세요.
+
+📍 서울 금천구 벚꽃로 254
+📞 010-8019-0450
+🔗 https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `"이 나이에 운동해봤자 뭐가 달라지겠어?" 라고 생각하신다면, 그 생각이 잘못됐다는 걸 알려드리고 싶습니다.
+
+실제로 F45 가산에서 운동하시는 분들의 절반 이상이 30·40대 직장인입니다. 그리고 대부분 8주 안에 눈에 띄는 변화를 경험하고 계십니다.
+
+비결은 간단합니다. 올바른 방식으로, 꾸준히 하는 것.
+
+F45는 전문 코치가 매 세션을 이끌어주기 때문에 운동 지식이 없어도 됩니다. 처음 오신 분도 바로 따라할 수 있도록 동작 수준을 조절해 드립니다.
+
+지금이 가장 좋은 시작 타이밍입니다. 1주일 무제한으로 직접 경험해보세요.
+
+🔗 체험 신청: https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#30대운동 #40대운동 #직장인체형관리 #가산디지털단지헬스장 #F45가산 #근력운동 #체지방감소 #가산피트니스 #금천구헬스장"
+    },
+
+    // 3. 그룹 트레이닝 장점
+    {
+      titles: [
+        "혼자 운동하면 작심삼일, 그룹 트레이닝이 답인 이유",
+        "F45 그룹 트레이닝이 개인 PT보다 나은 점",
+        "같이 운동하면 더 열심히 하게 되는 이유 — F45 가산",
+        "가산디지털단지 직장인들이 그룹 피트니스에 빠진 이유"
+      ],
+      bodies: [
+        `운동을 꾸준히 하지 못하는 가장 큰 이유 중 하나가 '혼자 한다'는 것입니다.
+
+헬스장에 등록해놓고 한 달도 안 돼 안 가게 된 경험, 다들 한 번씩은 있으시죠? 혼자 하면 동기부여도 안 되고, 강도 조절도 어렵고, 무엇보다 지루합니다.
+
+F45는 이 문제를 완벽하게 해결합니다.
+
+■ 그룹 트레이닝의 힘
+
+✔ 함께하면 포기하기 어렵습니다
+옆에서 함께 운동하는 사람들이 있으면 자연스럽게 더 열심히 하게 됩니다. 스포츠 심리학에서도 증명된 사실입니다.
+
+✔ 코치가 항상 함께합니다
+개인 PT처럼 전문 코치가 자세를 잡아주고 동기를 부여해줍니다. 단, 가격은 일반 헬스장 수준입니다.
+
+✔ 커뮤니티가 생깁니다
+같은 시간대에 함께 운동하다 보면 자연스럽게 서로 응원하는 커뮤니티가 형성됩니다. 이 커뮤니티가 꾸준함을 만들어줍니다.
+
+✔ 80가지 이상의 프로그램
+매번 다른 프로그램이라 지루할 틈이 없습니다.
+
+가산디지털단지에서 혼자 운동하다 포기한 경험이 있다면, 이번엔 F45 가산과 함께 시작해보세요.
+
+📍 서울 금천구 벚꽃로 254 (가산디지털단지역 도보 5분)
+🔗 1주일 무제한 체험: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `개인 PT를 받아도 3개월이 지나면 그만두게 되는 이유가 뭘까요? 비용 문제도 있지만, 트레이너와 단둘이 있는 공간이 어색하고 재미가 없기 때문이기도 합니다.
+
+F45는 다릅니다. 그룹이 함께 운동하는 에너지 자체가 동력이 됩니다.
+
+실제로 F45 가산 멤버들을 보면 6개월, 1년 이상 꾸준히 다니시는 분들이 많습니다. 운동 자체가 즐거운 시간이 되었기 때문입니다.
+
+한 번만 경험해보시면 압니다. 1주일 무제한 체험으로 직접 느껴보세요.
+
+🔗 https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#그룹피트니스 #그룹트레이닝 #F45가산 #가산디지털단지헬스장 #가산PT #팀트레이닝 #가산운동 #금천구피트니스 #작심삼일탈출"
+    },
+
+    // 4. 체지방 감소
+    {
+      titles: [
+        "체지방 줄이는 가장 효과적인 방법 — F45 가산 경험담",
+        "다이어트 실패를 반복한다면 이 운동법을 시도해보세요",
+        "가산디지털단지 직장인의 체지방 감소 비결",
+        "유산소만으로는 살이 안 빠집니다 — 체지방 감소의 진짜 원리"
+      ],
+      bodies: [
+        `다이어트를 몇 번이나 시도했지만 매번 실패하셨나요? 그 이유가 있습니다.
+
+단순히 먹는 것을 줄이거나 러닝머신만 달리는 방식은 장기적으로 효과를 내기 어렵습니다. 근육량이 줄어들면서 기초대사량이 낮아지고, 결국 더 쉽게 살이 찌는 몸이 되어버립니다.
+
+체지방을 효과적으로 줄이려면 유산소와 근력 운동을 함께 해야 합니다.
+
+■ F45가 체지방 감소에 효과적인 이유
+
+✔ HIIT 방식으로 체지방 연소를 극대화합니다
+고강도 인터벌 트레이닝은 같은 시간 대비 일반 유산소 운동보다 훨씬 많은 칼로리를 소모합니다.
+
+✔ 운동 후에도 칼로리가 계속 소모됩니다
+F45 운동 후 EPOC(운동 후 초과 산소 소비) 효과로 수 시간 동안 추가 칼로리가 연소됩니다.
+
+✔ 근육량을 유지하며 체지방만 줄입니다
+저항 운동이 포함되어 있어 근육 손실 없이 체지방을 줄일 수 있습니다.
+
+■ 얼마나 빠르면 변화가 보일까요?
+
+주 3회 이상 꾸준히 참여한 멤버들의 경우 평균 4주부터 체중 변화, 8주부터 눈에 띄는 체형 변화를 경험합니다.
+
+가산디지털단지에서 제대로 된 체지방 감소를 원하신다면 F45 가산에서 시작해보세요.
+
+📍 서울 금천구 벚꽃로 254
+🔗 1주일 무제한 체험: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `살을 빼고 싶어서 헬스장을 등록했는데 3개월이 지나도 별 변화가 없었던 경험 있으신가요?
+
+혼자 헬스장에서 운동하면 강도가 낮아지기 쉽고, 어떤 운동을 해야 효과적인지 모르는 경우가 많습니다.
+
+F45는 다릅니다. 전문 코치가 설계한 프로그램을 따라 45분 동안 최대 효율로 운동합니다.
+
+실제로 F45 가산에서 꾸준히 운동한 멤버의 경우 8주 만에 체지방이 눈에 띄게 줄어드는 경험을 하셨습니다.
+
+먼저 1주일 무제한 체험으로 직접 경험해보세요. 첫 번째 수업만으로도 왜 다른지 느끼실 수 있습니다.
+
+🔗 https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#체지방감소 #다이어트 #가산다이어트 #F45가산 #가산헬스장 #HIIT #체형관리 #가산디지털단지운동 #금천구다이어트"
+    },
+
+    // 5. 근력 운동 중요성
+    {
+      titles: [
+        "근력 운동, 왜 꼭 해야 할까요? — 가산 직장인을 위한 가이드",
+        "유산소만 하면 안 되는 이유 — 근력 운동의 중요성",
+        "근육이 늘면 살이 덜 찐다? 기초대사량의 비밀",
+        "F45 가산에서 근력과 유산소를 동시에 잡는 방법"
+      ],
+      bodies: [
+        `운동한다고 하면 많은 분들이 러닝머신이나 자전거 같은 유산소 운동만 떠올립니다. 그런데 사실 체형 관리에서 근력 운동이 유산소만큼, 어떤 면에서는 그보다 더 중요합니다.
+
+■ 근력 운동이 중요한 과학적 이유
+
+✔ 기초대사량을 높입니다
+근육 1kg은 하루에 약 13kcal를 소모합니다. 근육량이 늘면 가만히 있어도 더 많은 칼로리를 소비합니다. 즉, 살이 덜 찌는 체질이 됩니다.
+
+✔ 노화를 늦춥니다
+30대 이후 매년 근육량이 감소합니다. 근력 운동으로 이를 늦출 수 있고, 관절 건강과 자세 개선에도 도움이 됩니다.
+
+✔ 일상생활 능력이 향상됩니다
+기능성 근력 운동은 실제 일상에서 쓰이는 동작들을 기반으로 합니다. 허리 통증 감소, 자세 교정, 피로감 감소 효과가 있습니다.
+
+■ F45에서 근력 운동하는 방법
+
+F45의 RESISTANCE, HYBRID 프로그램은 기능성 근력 운동을 중심으로 구성되어 있습니다. 덤벨, 케틀벨, 저항 밴드 등 다양한 기구를 활용하며 전신 근력을 고르게 발달시킵니다.
+
+가산디지털단지에서 제대로 된 근력 운동을 시작하고 싶다면 F45 가산에서 시작해보세요.
+
+📍 서울 금천구 벚꽃로 254 (가산디지털단지역 도보 5분)
+🔗 1주일 무제한 체험: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `"저는 살만 빼면 되니까 근력 운동은 필요 없어요." 라고 하시는 분들이 많습니다.
+
+그런데 근력 운동 없이 다이어트를 하면 근육도 같이 빠지면서 기초대사량이 낮아지고, 나중엔 조금만 먹어도 살이 찌는 몸이 됩니다. 요요의 원인이 바로 이겁니다.
+
+F45는 매 세션마다 유산소와 근력을 함께 할 수 있도록 설계되어 있습니다. 따로 시간을 내서 근력 운동을 할 필요 없이, 45분 안에 모든 걸 해결할 수 있습니다.
+
+가산디지털단지에서 올바른 방식으로 운동을 시작해보세요.
+
+🔗 https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#근력운동 #기초대사량 #F45가산 #가산디지털단지헬스장 #가산운동 #체형관리 #기능성트레이닝 #금천구헬스장 #근육만들기"
+    },
+
+    // 6. 1주일 체험 안내
+    {
+      titles: [
+        "F45 가산 1주일 무제한 체험 — 이렇게 신청하세요",
+        "망설이지 말고 일단 경험해보세요 — F45 가산 체험 후기",
+        "처음 운동 시작하는 분들을 위한 F45 가산 체험 안내",
+        "F45 가산 1주일 무제한 체험, 이런 분께 추천합니다"
+      ],
+      bodies: [
+        `운동을 시작하고 싶은데 어디서부터 시작해야 할지 모르겠다면, F45 가산의 1주일 무제한 체험부터 시작해보세요.
+
+■ 1주일 무제한 체험이란?
+
+1주일 동안 F45 가산의 모든 클래스를 원하는 만큼 자유롭게 이용할 수 있는 체험 프로그램입니다.
+
+✔ CARDIO (유산소 집중)
+✔ RESISTANCE (근력 집중)
+✔ HYBRID (복합)
+✔ RECOVERY (회복·스트레칭)
+
+등 다양한 수업을 직접 체험해보고 나에게 맞는 프로그램을 찾을 수 있습니다.
+
+■ 이런 분께 추천합니다
+
+• 운동을 처음 시작하는 분
+• 헬스장을 등록해도 꾸준히 못 다니셨던 분
+• 다이어트가 번번이 실패했던 분
+• 퇴근 후 짧은 시간에 효율적인 운동을 원하는 분
+• 가산디지털단지 근처에서 운동할 곳을 찾고 계신 분
+
+■ 신청 방법
+
+아래 링크에서 간단하게 신청할 수 있습니다. 별도 준비물 없이 편한 운동복과 운동화만 챙겨오시면 됩니다.
+
+📍 서울 금천구 벚꽃로 254 (1호선·7호선 가산디지털단지역 도보 5분)
+📞 010-8019-0450
+🔗 지금 바로 신청하기: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `F45 가산에서 1주일 무제한 체험을 해보셨나요?
+
+처음 오시는 분들이 가장 많이 하시는 말씀이 "이렇게 재밌는 운동은 처음이에요" 입니다.
+
+45분이 어떻게 지났는지 모를 정도로 코치님들이 에너지 넘치게 이끌어주시고, 함께하는 멤버들의 열기가 더해져 운동하는 내내 집중하게 됩니다.
+
+운동이 즐거워지면 꾸준함은 자연스럽게 따라옵니다.
+
+가산디지털단지역에서 도보 5분 거리. 퇴근 후 바로 들를 수 있는 위치입니다.
+
+1주일 무제한 체험으로 직접 경험해보세요.
+
+🔗 신청하기: https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#F45가산체험 #가산헬스장체험 #1주일무제한 #가산디지털단지헬스장 #그룹피트니스 #F45가산 #가산피트니스 #금천구운동 #운동시작"
+    },
+
+    // 7. 가산역 주변 운동 추천
+    {
+      titles: [
+        "가산디지털단지역 주변 헬스장 추천 — F45 가산",
+        "가산디지털단지 직장인이 퇴근 후 운동하기 좋은 곳",
+        "가산역 5분 거리, 직장인들의 운동 성지 F45 가산",
+        "금천구에서 운동할 곳 찾고 계세요? F45 가산을 추천합니다"
+      ],
+      bodies: [
+        `가산디지털단지에서 근무하시는 분들이라면 퇴근 후 운동할 만한 곳을 찾기 어려우셨을 겁니다.
+
+일반 헬스장은 뭘 해야 할지 모르고, 필라테스나 요가는 남성분들이 다니기 어색하고, 개인 PT는 비용 부담이 크죠.
+
+F45 Training 가산이 그 고민을 해결해 드립니다.
+
+■ 가산디지털단지역 도보 5분
+
+1호선·7호선 가산디지털단지역에서 걸어서 5분 거리에 위치해 있습니다. 퇴근길에 가방 하나 들고 바로 들를 수 있는 최적의 위치입니다.
+
+■ F45 가산이 특별한 이유
+
+✔ 45분 만에 끝나는 고효율 운동
+✔ 전문 코치가 처음부터 끝까지 함께
+✔ 매번 다른 프로그램으로 지루함 없음
+✔ 30·40대 직장인 중심의 커뮤니티
+✔ 남녀 모두 편하게 다닐 수 있는 환경
+
+■ 이용 가능한 프로그램
+
+CARDIO · RESISTANCE · HYBRID · RECOVERY · HYROX · LIONHEART
+
+다양한 프로그램 중 그날의 컨디션에 맞는 클래스를 선택해서 참여할 수 있습니다.
+
+가산디지털단지에서 제대로 된 운동을 시작하고 싶다면 지금 1주일 무제한 체험을 신청해보세요.
+
+📍 서울 금천구 벚꽃로 254 (월드메르디앙1차)
+📞 010-8019-0450
+📸 인스타그램: @f45_training_gasan
+🔗 1주일 무제한 체험: https://booking.naver.com/booking/13/bizes/1102558`,
+
+        `가산디지털단지에서 일하면서 꾸준히 운동하기 어려웠던 이유가 있습니다.
+
+퇴근 후엔 지쳐있고, 적당한 운동 시설도 마땅치 않고, 혼자 하면 금방 그만두게 되죠.
+
+F45 가산은 이 모든 문제를 한번에 해결합니다. 가산디지털단지역에서 걸어서 5분, 45분 집중 운동, 전문 코치의 밀착 지도.
+
+직접 경험해보시면 왜 입소문이 나는지 바로 아실 겁니다. 1주일 무제한 체험으로 시작해보세요.
+
+📍 가산디지털단지역 도보 5분
+🔗 https://booking.naver.com/booking/13/bizes/1102558`
+      ],
+      tags: "#가산디지털단지헬스장 #가산역헬스장 #금천구헬스장 #가산운동추천 #F45가산 #가산피트니스 #가산디지털단지운동 #퇴근후운동 #직장인운동추천"
+    }
+  ];
+
+  // ── 생성 함수 ──
+  function generate() {
+    const t = topics[selectedTopic];
+    const title = t.titles[Math.floor(Math.random() * t.titles.length)];
+    const body  = t.bodies[Math.floor(Math.random() * t.bodies.length)];
+
+    document.getElementById('output').textContent = `[제목]\n${title}\n\n${body}`;
+    document.getElementById('tags').textContent = t.tags;
+
+    const card = document.getElementById('resultCard');
+    card.classList.add('show');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '복사하기';
+    btn.classList.remove('copied');
+  }
+
+  // ── 복사 함수 ──
+  function copyText() {
+    const text = document.getElementById('output').textContent
+                + '\n\n' + document.getElementById('tags').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '복사됨 ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '복사하기';
+        btn.classList.remove('copied');
+      }, 2500);
+    });
+  }
+</script>
+</body>
+</html>
